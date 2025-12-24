@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import './App.css';
 import { collection, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebase";
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './firebase'
+
+import AuthForm from './AuthForm';
 
 function App() {
   // ---------------- STATE ----------------
@@ -19,6 +23,9 @@ function App() {
 
   const [adoptedCount, setAdoptedCount] = useState(0);
   const [selectedPet, setSelectedPet] = useState(null);
+
+  const [user, setUser] = useState(null);
+
 
   // ---------------- HELPERS ----------------
   const fetchDogImage = async () => {
@@ -50,6 +57,14 @@ function App() {
   useEffect(() => {
     fetchAllFields();
   }, []);
+
+  useEffect(() =>{
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+
+    return () => unsubscribe();
+  },[]);
 
   // ---------------- ADD PET HANDLER ----------------
   const handleAddPet = async (e) => {
@@ -117,8 +132,17 @@ function App() {
   }
 
   // ---------------- JSX ----------------
+ 
+
   return (
     <div className="container">
+
+       {!user ? (
+    <AuthForm/>
+  ): (
+    <p>Welcome, {user.email}</p>
+  )}
+
       <h1>Adopt a Pet 🐾</h1>
       <h2>Total Pets Adopted: {adoptedCount}</h2>
 
@@ -164,9 +188,11 @@ function App() {
         </div>
       )}
 
+      {user &&(
       <button className="new-pets" onClick={() => setShowForm(true)}>
         Pet for Adoption
       </button>
+      )}
 
       {showForm && (
         <form onSubmit={handleAddPet}>
